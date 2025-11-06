@@ -872,3 +872,9 @@ void gagnantMode() {
 ```
 
 </details>
+
+## Pour aller + loin
+
+On pourrait ajouter des dynamiques de jeu : 
+- plusieurs niveaux, le joueur qui gagne le plus de niveaux gagne
+- plusieurs boutons par joueurs, et il faut appuyer sur le bouton de la couleur de la led qui s'allume
