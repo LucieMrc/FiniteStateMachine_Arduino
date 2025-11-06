@@ -134,7 +134,7 @@ void loop() {
 }
 ```
 
-### Limiter l'animation à l'Attract Mode
+### Limiter l'animation à l'Attract Mode et quitter l'Attract Mode
 
 Pour que le clignotement des leds ne soit que dans l'Attract Mode, on va créer une condition prenant en compte l'état de la variable `gameState`.
 
@@ -176,6 +176,19 @@ Afin de pouvoir écrire
     }
 ```
 
+On va également éteindre les deux leds à la fin de l'Attract Mode, en changeant les ledState :
+```
+    if (buttonState1 == 1 && buttonState2 == 1) {
+      ledState1 = LOW;
+      ledState2 = LOW;
+      digitalWrite(pinLed1, ledState1);
+      digitalWrite(pinLed2, ledState2);
+      gameState = 1;
+    }
+```
+
+
+
 On a donc l'Attract Mode avec le clignotement des leds, qu'on quitte en appuyant sur les deux boutons en même temps.
 
 <details>
@@ -190,8 +203,8 @@ int pinBouton2 = 9;
 
 int gameState = 0;  //le mode par défaut est l'Attract Mode
 
-buttonState1 = digitalRead(pinBouton1);
-buttonState2 = digitalRead(pinBouton2);
+int buttonState1;
+int buttonState2;
 
 long timing = 0;
 bool ledState1 = LOW;
@@ -206,6 +219,9 @@ void setup() {
 }
 
 void loop() {
+    buttonState1 = digitalRead(pinBouton1);
+    buttonState2 = digitalRead(pinBouton2);
+
 
   if (gameState == 0) {  //si on est dans l'Attract Mode
     if (millis() > timing + 1000) {
@@ -217,6 +233,10 @@ void loop() {
     }
 
     if (buttonState1 == 1 && buttonState2 == 1) {
+      ledState1 = LOW;
+      ledState2 = LOW;
+      digitalWrite(pinLed1, ledState1);
+      digitalWrite(pinLed2, ledState2);
       gameState = 1;
     }
   }
@@ -229,4 +249,321 @@ void loop() {
 
 ## Mode de jeu
 
+Ici, le jeu est un jeu de rapidité où chaque joueur a un bouton, et dans le mode jeu une led s'allume à un moment random, et le premier qui appuie sur son bouton a gagné.
+
+Notre mode de jeu sera dans le loop(), dans une condition qui vérifie qu'on est bien dans `gameState` == 1.
+
+### Allumer la led
+
+Pour qu'une led s'allume à un moment random entre 5 et 15 secondes après qu'on soit entré dans le mode de jeu, on veux savoir à quel moment on est entré dans le mode de jeu.
+
+On va donc créer une variable `startGame` qui va nous donner "l'heure" à laquelle on a quitté l'Attract Mode, donc le moment auquel on a appuyé sur les deux boutons à la fois et on est passé du `gameState` 0 au `gameState` 1.
+
+On commence donc par déclarer au dessus du setup() :
+```
+long startGame;
+```
+
+Ensuite, on va donc donner `startGame` l'heure qu'il était dans la condition de changement de state.
+
+On ajoute donc `startGame = millis();` :
+
+```
+    if (buttonState1 == 1 && buttonState2 == 1) {
+        startGame = millis();
+        ledState1 = LOW;
+        ledState2 = LOW;
+        digitalWrite(pinLed1, ledState1);
+        digitalWrite(pinLed2, ledState2);
+        gameState = 1;
+    }
+```
+
+Pour que la led s'allume au bout d'un temps entre 5 et 15 secondes après `startGame`, on crée une variable `startLed` qui sera random entre 0 et 15000 (15 secondes en millisecondes);
+
+On commence donc par déclarer au dessus du setup() :
+```
+long startLed;
+```
+
+Pour que notre fonction `random()` fonctionne, on ajoute la fonction `randomSeed()` dans le setup() pour avoir un "vrai" hasard :
+```
+  randomSeed(analogRead(0));
+```
+
+Et au même moment où on update `startGame`, on va updater `startLed`. On écrit donc :
+
+```
+    if (buttonState1 == 1 && buttonState2 == 1) {
+        startGame = millis();
+        startLed = random(5000, 15000);
+        gameState = 1;
+    }
+```
+
+Pour allumer une des deux leds, on crée une variable `whichLed`, et on lui attribue un nombre random entre 1 et 2.
+Si `whichLed` == 1, alors on allume la led 1, et si `whichLed` == 2, alors on allume la led 2.
+
+À nouveau, on définit au dessus du setup() la variable :
+```
+int whichLed;
+```
+
+Et à nouveau on update `whichLed` en même temps que le reste :
+```
+    if (buttonState1 == 1 && buttonState2 == 1) {
+        startGame = millis();
+        startLed = random(5000, 15000); //le laps de temps random est entre 5 et 15secondes
+        whichLed = random(1, 3);
+        gameState = 1;
+        ledState1 = LOW;
+        ledState2 = LOW;
+        digitalWrite(pinLed1, ledState1);
+        digitalWrite(pinLed2, ledState2);
+    }
+```
+
+La fonction `random()` ne prendra jamais le dernier nombre de l'intervalle, donc `random(5000, 15000)` prendra n'importe quel nombre entre 5000 et 14999, et `random(1, 3)` prendra soit 1 soit 2.
+
+Maintenant vérifier qu'on est dans le mode jeu, on va créer une condition à la suite du mode Attract : 
+
+```
+if (gameState == 0) {  //si on est dans l'Attract Mode
+    //tous les trucs qu'on a mis dans le mode attract
+    //...
+} else if (gameState == 1) { //si on est dans le mode jeu
+  }
+```
+
+Et on va dire qu'on allume la led définie par `whichLed`, quand "l'heure" `millis()` est plus grand que `startGame` (l'heure à laquelle on est passé dans le mode jeu) + `startLed` (le temps random d'allumage de la led).
+
+On écrit donc 
+```
+} else if (gameState == 1) { //si on est dans le mode jeu
+    if (millis() > startGame + startLed) //si le laps de temps random est écoulé
+      if (whichLed == 1) {
+        ledState1 = HIGH;
+        digitalWrite(pinLed1, ledState1);
+      } else if (whichLed == 2) {
+        ledState2 = HIGH;
+        digitalWrite(pinLed2, ledState2);
+      }
+}
+```
+
+### Vérifier le gagnant et passer au mode perdu/gagné
+
+Maintenant qu'une led s'attend à un moment random, on veux que le premier joueur à avoir appuyé sur son bouton gagne.
+
+On vérifie donc l'état de chaque bouton, dans la boucle où les leds sont allumés, et si un des boutons est appuyé, on quitte le mode de jeu et on passe au mode perdu/gagné.
+
+```
+  } else if (gameState == 1) {
+    if (millis() > startGame + startLed) //si le laps de temps random est écoulé
+      if (whichLed == 1) {
+        ledState1 = HIGH;
+        digitalWrite(pinLed1, ledState1);
+      } else if (whichLed == 2) {
+        ledState2 = HIGH;
+        digitalWrite(pinLed2, ledState2);
+      }
+
+    if (buttonState1 == HIGH) { //si on appuie sur le bouton1
+      gameState = 2;
+    } else if (buttonState2 == HIGH) { //si on appuie sur le bouton2
+      gameState = 2;
+    }
+  }
+```
+
+Pour déclarer le gagnant, on crée une variable `winner` qu'on définit au dessus du setup() :
+```
+int winner;
+```
+Et dans la partie où on passe au mode perdu/gagnant, on déclare le gagnant, sachant que le premier qui appuie fait en sorte qu'on quitte le mode jeu, et donc qu'on ne teste pas le bouton de l'autre :
+```
+    if (buttonState1 == HIGH) { //si on appuie sur le bouton1
+      gameState = 2;
+      winner = 1;
+    } else if (buttonState2 == HIGH) { //si on appuie sur le bouton2
+      gameState = 2;
+      winner = 2;
+    }
+```
+
+On éteint également les deux leds, même si une seule était allumée :
+```
+      if (buttonState1 == HIGH) {  //si on appuie sur le bouton1
+        gameState = 2;
+        ledState1 = LOW;
+        ledState2 = LOW;
+        digitalWrite(pinLed1, ledState1);
+        digitalWrite(pinLed2, ledState2);
+        winner = 1;
+      } else if (buttonState2 == HIGH) {  //si on appuie sur le bouton2
+        gameState = 2;
+        ledState1 = LOW;
+        ledState2 = LOW;
+        digitalWrite(pinLed1, ledState1);
+        digitalWrite(pinLed2, ledState2);
+        winner = 2;
+      }
+```
+
+On a donc crée le mode de jeu où un des deux leds s'allume au hasard, dans un laps de temps random entre 5 et 15 secondes depuis le début du mode de jeu, où le gagnant est le premier à avoir appuyé sur son bouton à l'allumage de la led. Lorsqu'il y a un gagnant, on passe au mode perdu/gagné.
+
+<details>
+
+<summary> Code complet à cette étape</summary>
+
+```
+int pinLed1 = 6;
+int pinLed2 = 7;
+int pinBouton1 = 8;
+int pinBouton2 = 9;
+
+int buttonState1;
+int buttonState2;
+
+int gameState = 0;  //le mode par défaut est l'Attract Mode
+
+long timing = 0;
+bool ledState1 = LOW;
+bool ledState2 = HIGH;
+
+long startLed;
+long startGame;
+
+int whichLed;
+int winner;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(pinLed1, OUTPUT);
+  pinMode(pinLed2, OUTPUT);
+  pinMode(pinBouton1, INPUT);
+  pinMode(pinBouton2, INPUT);
+
+  randomSeed(analogRead(0));
+}
+
+void loop() {
+
+  buttonState1 = digitalRead(pinBouton1);
+  buttonState2 = digitalRead(pinBouton2);
+
+  if (gameState == 0) {  //si on est dans l'Attract Mode
+    if (millis() > timing + 1000) {
+      ledState1 = !ledState1;            //ledState1 devient le contraire de ledState1
+      ledState2 = !ledState2;            //ledState2 devient le contraire de ledState2
+      digitalWrite(pinLed1, ledState1);  //on donne l'état ledState1 à la led1
+      digitalWrite(pinLed2, ledState2);  //on donne l'état ledState2 à la led2
+      timing = millis();
+    }
+    if (buttonState1 == 1 && buttonState2 == 1) {
+      startGame = millis();
+      startLed = random(5000, 15000);  //le laps de temps random est entre 5 et 15secondes
+      whichLed = random(1, 3);
+      ledState1 = LOW;
+      ledState2 = LOW;
+      digitalWrite(pinLed1, ledState1);
+      digitalWrite(pinLed2, ledState2);
+      gameState = 1;
+    }
+  } else if (gameState == 1) {
+    if (millis() > startGame + startLed) {  //si le laps de temps random est écoulé
+      if (whichLed == 1) {
+        ledState1 = HIGH;
+        digitalWrite(pinLed1, ledState1);
+      } else if (whichLed == 2) {
+        ledState2 = HIGH;
+        digitalWrite(pinLed2, ledState2);
+      }
+
+      if (buttonState1 == HIGH) {  //si on appuie sur le bouton1
+        gameState = 2;
+        ledState1 = LOW;
+        ledState2 = LOW;
+        digitalWrite(pinLed1, ledState1);
+        digitalWrite(pinLed2, ledState2);
+        winner = 1;
+      } else if (buttonState2 == HIGH) {  //si on appuie sur le bouton2
+        gameState = 2;
+        ledState1 = LOW;
+        ledState2 = LOW;
+        digitalWrite(pinLed1, ledState1);
+        digitalWrite(pinLed2, ledState2);
+        winner = 2;
+      }
+    }
+  }
+}
+
+```
+
+</details>
+
 ## Perdu/gagné
+
+Dans le mode perdu/gagné, je veux que la led du coté du gagnant clignote rapidement pendant 5 secondes. À la fin des 5 secondes, on retourne dans l'Attract Mode.
+
+On récupère donc la variable `timing` du début, qu'on va updater dans la partie où on vérifie le gagnant, avec la ligne `timing = millis();` à nouveau :
+
+```
+      if (buttonState1 == HIGH) {  //si on appuie sur le bouton1
+        gameState = 2;
+        ledState1 = LOW;
+        ledState2 = LOW;
+        digitalWrite(pinLed1, ledState1);
+        digitalWrite(pinLed2, ledState2);
+        winner = 1;
+        timing = millis();
+      } else if (buttonState2 == HIGH) {  //si on appuie sur le bouton2
+        gameState = 2;
+        ledState1 = LOW;
+        ledState2 = LOW;
+        digitalWrite(pinLed1, ledState1);
+        digitalWrite(pinLed2, ledState2);
+        winner = 2;
+        timing = millis();
+      }
+```
+
+On crée ensuite la condition du `gameState` 2, à la suite des autres conditions de mode de jeu. On a donc :
+```
+if (gameState == 0) {  //si on est dans l'Attract Mode
+    //tous les trucs qu'on a mis dans le mode attract
+    //...
+  } else if (gameState == 1) { //si on est dans le mode jeu
+    //tous les trucs qu'on a mis dans le mode jeu
+    //...
+  } else if (gameState == 2) { //si on est dans le mode perdu/gagnant
+  }
+```
+
+On va faire une condition comme dans l'Attract Mode, qui fait clignoter la led, mais cette fois ci toutes les 200 millisecondes et uniquement la led du gagnant.
+
+On écrit donc :
+```
+
+if (gameState == 0) {  //si on est dans l'Attract Mode
+    //tous les trucs qu'on a mis dans le mode attract
+    //...
+  } else if (gameState == 1) { //si on est dans le mode jeu
+    //tous les trucs qu'on a mis dans le mode jeu
+    //...
+    
+  } else if (gameState == 2) { //si on est dans le mode perdu/gagnant
+    if (millis() > timing + 200) {
+      if (winner = 1) {
+        ledState1 = !ledState1;            //ledState1 devient le contraire de ledState1
+        digitalWrite(pinLed1, ledState1);  //on donne l'état ledState1 à la led1
+      } else if (winner == 2) {
+        ledState2 = !ledState2;  //ledState2 devient le contraire de ledState2
+        digitalWrite(pinLed2, ledState2);  //on donne l'état ledState2 à la led2
+      }
+      timing = millis();
+    }
+}
+```
+
