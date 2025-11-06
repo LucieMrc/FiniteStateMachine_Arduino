@@ -1,5 +1,7 @@
 # FiniteStateMachine_Arduino
 
+*code with me... Finite State Machine...*
+
 Un principe de jeu de base :
 
 !['schema'](./images/FiniteStateMachine.png)
