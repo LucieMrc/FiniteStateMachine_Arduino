@@ -1,6 +1,7 @@
 # FiniteStateMachine_Arduino
 
-Le principe d'un jeu de base : 
+Un principe d'un jeu de base : 
+
 !['schema'](./images/FiniteStateMachine.png)
 
 Le jeu qu'on va faire ici : 
@@ -19,6 +20,8 @@ Mode perdu/gagné qui affiche le gagnant, le score
 on passe du mode perdu/gagné à l'attract mode avec un timing en général, ou une action
 
 
+## Mise en place
+
 ### Le montage
 
 !['schema'](./images/montage.png)
@@ -27,7 +30,7 @@ Les leds sont branchés sur les pins 6 et 7, et les boutons sont sur les pins 8 
 
 <!-- photo du montage -->
 
-## Le code
+### Le début du code
 
 D'abord je déclare les pins des leds et boutons au dessus du setup() :
 ```
@@ -224,10 +227,6 @@ void loop() {
 </details>
 
 
+## Mode de jeu
 
-### Mode de jeu
-
-### Perdu/gagné
-
-
-ne pas utiliser de delai
+## Perdu/gagné
